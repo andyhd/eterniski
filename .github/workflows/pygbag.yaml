@@ -1,0 +1,51 @@
+name: pygbag_build
+on: [push]
+
+jobs:
+  build:
+    name: Build pygbag
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - run: |
+          curl -fL https://github.com/andyhd/ogam-utils/archive/refs/heads/main.tar.gz \
+          | tar xz --strip-components=1 ogam-utils-main/ogam/
+
+      - run: mkdir -p dist && for f in $(cat manifest); do cp -r $f dist/; done
+
+      - run: python -m pygbag --ume_block 0 --build $GITHUB_WORKSPACE/dist
+
+      - run: tar --directory $GITHUB_WORKSPACE/dist/build/web -cvf "$RUNNER_TEMP/artifact.tar" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,3 @@
+pygame-ce
+pygbag
+ogam @ https://github.com/andyhd/ogam-utils/archive/refs/heads/main.zip
